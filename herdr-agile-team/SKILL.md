@@ -38,6 +38,8 @@ herdr pane rename <current-pane-id> POA
 
 This rename is mandatory; do not rely on the existing pane label or agent name. If the rename fails, stop before creating additional panes and report the failure. The pane contains the currently running Codex session, so the skill must not replace it with another agent or force its model. Report it as `POA (current session)` and, when known, include the current model.
 
+Pane labels and agent names are independent. Explicitly rename every newly created pane to its exact role name (`tech-lead`, `dev-implement`, or `dev-review`) using the pane ID returned by its split operation. Do not rely on `agent start <name>` to set the pane label.
+
 Create and start these three additional agents, all with `--kind codex`:
 
 | Pane / agent name | Role | Model | Editing policy |
@@ -130,21 +132,24 @@ The POA role is represented by the caller itself. The caller must retain the `PO
 
 ## Pane layout
 
-Create three sibling panes in the current Tab and `<shared-cwd>`. Prefer a 2×2 arrangement that keeps the caller pane in place:
+Create three sibling panes in the current Tab and `<shared-cwd>`. Prefer a 2×2 arrangement that keeps the caller pane in place. Rename each pane immediately after its split succeeds:
 
-1. Split the caller pane to the right for `tech-lead`.
-2. Split the caller pane down for `dev-implement`.
-3. Split the returned `tech-lead` pane down for `dev-review`.
+1. Split the caller pane to the right, retain the returned pane ID, and rename that pane `tech-lead`.
+2. Split the caller pane down, retain the returned pane ID, and rename that pane `dev-implement`.
+3. Split the returned `tech-lead` pane down, retain the returned pane ID, and rename that pane `dev-review`.
 
 Use the returned caller pane ID and the returned pane ID from every split response. Pass the previously resolved physical absolute path, quoted, to every split. Typical commands are:
 
 ```bash
 herdr pane split <caller-pane-id> --direction right --cwd "<shared-cwd>" --no-focus
+herdr pane rename <tech-lead-pane-id> tech-lead
 herdr pane split <caller-pane-id> --direction down --cwd "<shared-cwd>" --no-focus
+herdr pane rename <dev-implement-pane-id> dev-implement
 herdr pane split <tech-lead-pane-id> --direction down --cwd "<shared-cwd>" --no-focus
+herdr pane rename <dev-review-pane-id> dev-review
 ```
 
-Do not create a new workspace, tab, worktree, or remote machine. Do not close or move pre-existing panes. If the layout cannot be completed, report the panes already created and stop without destructive cleanup.
+All three new-pane renames are mandatory. If any rename fails, do not start agents; report the panes already created and stop without destructive cleanup. Do not create a new workspace, tab, worktree, or remote machine. Do not close or move pre-existing panes. If the layout cannot be completed, report the panes already created and stop without destructive cleanup.
 
 ## Startup and reporting
 
