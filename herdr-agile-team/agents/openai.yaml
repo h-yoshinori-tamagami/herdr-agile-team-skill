@@ -1,0 +1,4 @@
+interface:
+  display_name: "Herdr Agile Team"
+  short_description: "HerdrのPaneにCodex製Agileチームを構成する"
+  default_prompt: "$herdr-agile-team を使って、現在のHerdr TabにAgileチームを作成してください。"
