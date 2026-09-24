@@ -15,6 +15,10 @@ Herdr の現在の Tab に、Codex エージェントによる4役の Agile チ�
 
 POAだけが実装・レビュー・修正の作業を割り当てます。`dev-implement`と`dev-review`は互いを直接呼び出さず、Pull Requestを証跡としてPOAへ結果を返します。各役割は技術的な助言が必要なときに`tech-lead`へ相談できます。
 
+## GitHubコメントの言語
+
+GitHub上のPR会話コメント、返信、インラインレビューコメント、レビュー要約は日本語で記載します。`blocker`、`major`、`minor`などのseverity、`Approve` / `Request changes`の判定ラベル、コード識別子は原表記を保ち、指摘の説明、根拠、対応依頼、判断理由を日本語で書きます。
+
 ## 前提条件
 
 - Herdr がインストールされていること
