@@ -1,11 +1,11 @@
 ---
 name: herdr-agile-team
-description: "Create a four-role Agile team in the current Herdr tab using Codex agents in sibling panes. Use when the user asks to create or initialize a Herdr Agile team; do not use for generic delegation or for managing an existing team."
+description: "Create a four-role Agile team in the current Herdr tab using Codex agents in sibling panes, with independent teams per tab. Use when the user asks to create or initialize a Herdr Agile team; do not use for generic delegation or for managing an existing team."
 ---
 
 # Herdr Agile Team
 
-Herdr の現在の Tab に、`POA`、`tech-lead`、`dev-implement`、`dev-review` からなる Agile チームを初期化する。チーム作成だけを行い、案件の分解・実装・レビューの反復運営は開始しない。
+Herdr の現在の Tab に、`POA`、`tech-lead`、`dev-implement`、`dev-review` からなる Agile チームを初期化する。複数の Tab に独立したチームを作れるよう、各エージェント名には対象 Tab を示す一意のキーを付け、ペイン表示名には役割名を使う。チーム作成だけを行い、案件の分解・実装・レビューの反復運営は開始しない。
 
 ## Preconditions
 
@@ -30,6 +30,10 @@ Use the installed `herdr` CLI as the authority for syntax. Read JSON responses a
 
 ## Fixed team shape
 
+`herdr pane current --current` の応答から `workspace_id` と `tab_id` を取得し、両方を `-` で連結する。連結したキーの英数字以外の連続文字は `-` 1つに置き換え、先頭・末尾の `-` を除く。各エージェント名は `<role>-<team-key>` とする。たとえば workspace `w7`、tab `t4` なら `tech-lead-w7-t4`、`dev-implement-w7-t4`、`dev-review-w7-t4`。
+
+この一意キー付きエージェント名を `agent start` と後続の Herdr 操作で使う。ペイン表示名はエージェント名と独立しており、各 Tab 内で `tech-lead`、`dev-implement`、`dev-review` にする。同じ役割名のエージェントが別 Tab にいても、それだけでは競合ではない。
+
 The caller's current pane is the POA pane. After obtaining its returned pane ID from `herdr pane current --current`, force its pane label to `POA`:
 
 ```bash
@@ -38,21 +42,32 @@ herdr pane rename <current-pane-id> POA
 
 This rename is mandatory; do not rely on the existing pane label or agent name. If the rename fails, stop before creating additional panes and report the failure. The pane contains the currently running Codex session, so the skill must not replace it with another agent or force its model. Report it as `POA (current session)` and, when known, include the current model.
 
-Pane labels and agent names are independent. Explicitly rename every newly created pane to its exact role name (`tech-lead`, `dev-implement`, or `dev-review`) using the pane ID returned by its split operation. Do not rely on `agent start <name>` to set the pane label.
+Pane labels and agent names are independent. Explicitly rename every newly created pane to its exact role name (`tech-lead`, `dev-implement`, or `dev-review`) using the pane ID returned by its split operation. Do not rely on `agent start <name>` to set the pane label. Start each agent under its generated tab-specific name, such as `tech-lead-w7-t4`, rather than the bare role name. After startup, set the display-only agent label to the canonical kind `codex` so the sidebar shows the active agent consistently while the unique Herdr agent name remains available for control:
+
+```bash
+herdr pane report-metadata <current-pane-id> --source user:herdr-agile-team-sidebar --agent codex --display-agent codex
+herdr pane report-metadata <tech-lead-pane-id> --source user:herdr-agile-team-sidebar --agent codex --display-agent codex
+herdr pane report-metadata <dev-implement-pane-id> --source user:herdr-agile-team-sidebar --agent codex --display-agent codex
+herdr pane report-metadata <dev-review-pane-id> --source user:herdr-agile-team-sidebar --agent codex --display-agent codex
+```
 
 Create and start these three additional agents, all with `--kind codex`:
 
-| Pane / agent name | Role | Model | Editing policy |
-| --- | --- | --- | --- |
-| `tech-lead` | Technical Lead | `gpt-5.6-sol` (medium reasoning) | Never edits source; advisory and read-only |
-| `dev-implement` | Development / Implementation | `gpt-5.6-luna` | Read-only during initialization; edits only after POA explicitly assigns work |
-| `dev-review` | Development / Review | `gpt-5.6-luna` | Never edits source; reviews and posts individual PR comments after assignment |
+| Pane label | Herdr agent name | Role | Model | Editing policy |
+| --- | --- | --- | --- | --- |
+| `tech-lead` | `tech-lead-<team-key>` | Technical Lead | `gpt-6-sol` (medium reasoning) | Never edits source; advisory and read-only |
+| `dev-implement` | `dev-implement-<team-key>` | Development / Implementation | `gpt-6-luna` (max reasoning) | Read-only during initialization; edits only after POA explicitly assigns work |
+| `dev-review` | `dev-review-<team-key>` | Development / Review | `gpt-6-luna` (max reasoning) | Never edits source; reviews and posts individual PR comments after assignment |
 
 Pass the model to Codex after Herdr's `--` separator, for example:
 
 ```bash
-herdr agent start tech-lead --kind codex --pane <pane-id> --timeout 30000 -- --model gpt-5.6-sol -c model_reasoning_effort=medium
+herdr agent start <tech-lead-agent-name> --kind codex --pane <pane-id> --timeout 30000 -- --model gpt-6-sol -c model_reasoning_effort=medium
+herdr agent start <dev-implement-agent-name> --kind codex --pane <pane-id> --timeout 30000 -- --model gpt-6-luna -c model_reasoning_effort=max
+herdr agent start <dev-review-agent-name> --kind codex --pane <pane-id> --timeout 30000 -- --model gpt-6-luna -c model_reasoning_effort=max
 ```
+
+Treat model and reasoning effort as a pair for each role. Verify both values in the returned `argv` from every `agent start`; do not report initialization as successful for a role if either value is missing or differs.
 
 Do not silently substitute another model if a requested model is unavailable. Report the failure and leave the successful parts of the setup visible.
 
@@ -114,7 +129,7 @@ herdr pane layout --current
 herdr agent list
 ```
 
-If any fixed agent name is already used by a live agent, do not rename, release, or reuse it. Report the name conflict before creating new panes.
+Filter `herdr agent list` by both `workspace_id` and `tab_id` from the current pane. Existing role agents in other Tabs do not block this setup, even when their role names match. Stop before renaming the caller pane or creating panes if the target Tab already contains a live agent named `tech-lead`, `dev-implement`, or `dev-review`, or whose name starts with one of those role names followed by `-`. Also stop if any live agent anywhere already uses one of the generated tab-specific names. Do not rename, release, or reuse an existing agent; report the conflicting name and pane/tab IDs.
 
 Send each new agent a short initialization prompt containing:
 
@@ -163,7 +178,7 @@ All three new-pane renames are mandatory. If any rename fails, do not start agen
 
 Start agents only in the newly created shell panes. A pane must be at an interactive shell prompt with no foreground process before `agent start` is attempted.
 
-After startup, obtain live state with the returned agent names or pane IDs. If startup returns `agent_not_ready`, `timeout`, or `agent_prompt_stalled`, inspect the target with `agent get` and `agent read` before deciding whether to retry. Do not blindly submit the same prompt again.
+After each `agent start`, verify the requested model and reasoning effort in its returned `argv`, then apply the display-only metadata above to the caller pane and each agent pane. Confirm with `herdr pane get <pane-id>` that `display_agent` is `codex` on all four panes before reporting success. Do not use `agent rename` for this presentation change; the unique tab-specific agent name remains the control target. If startup returns `agent_not_ready`, `timeout`, or `agent_prompt_stalled`, inspect the target with `agent get` and `agent read` before deciding whether to retry. Do not blindly submit the same prompt again.
 
 Send initialization prompts one at a time and wait for each to settle before prompting the next role. If the shell tool returns a running command/session handle while `agent prompt --wait` is still running, retain and resume that handle; a shell-tool yield is not evidence that the agent is stalled. Do not discard the handle, interrupt the agent, or replay the prompt solely because the wrapper returned early. If the result is unclear, inspect `agent get` and `agent read` first.
 
@@ -172,8 +187,9 @@ After all three prompts settle, inspect `herdr pane layout --current`. If focus 
 Report a compact table containing:
 
 - role;
-- agent name or `POA (current session)`;
-- model requested, with the POA model caveat;
+- tab ID;
+- agent name or `POA (current session)` (new agent names include the tab-specific key);
+- model and reasoning effort requested, with the POA model caveat;
 - pane ID;
 - current Herdr state;
 - shared cwd.

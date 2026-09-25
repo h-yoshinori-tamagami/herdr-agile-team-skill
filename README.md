@@ -1,17 +1,19 @@
 # Herdr Agile Team Skill
 
-Herdr の現在の Tab に、Codex エージェントによる4役の Agile チームを2×2の Pane 構成で初期化する Skill です。
+Herdr の現在の Tab に、Codex エージェントによる4役の Agile チームを2×2の Pane 構成で初期化する Skill です。Tab ごとに独立したチームを作れるよう、Herdr の agent 名には workspace ID と tab ID から生成した一意キーを付け、Pane の表示名には役割名を使います。
 
 チームの役割と連携ルールを各エージェントの初期コンテキストへ渡します。初期化時は全員が読み取り専用で待機し、案件の分解・実装・レビューは明示的な作業指示を受けてから開始します。
 
 ## チーム構成
 
-| Pane / agent | 役割 | モデル | 主な責務 |
-| --- | --- | --- | --- |
-| `POA` | Orchestrator | 起動元の Codex セッション | 要件、全体設計、実装計画、タスク割当、進捗、最終判断 |
-| `tech-lead` | Technical Lead | `gpt-5.6-sol`、reasoning `medium` | 高度な設計・実装・レビューへの助言。ソースは変更しない |
-| `dev-implement` | Development / Implementation | `gpt-5.6-luna` | POAから割り当てられた実装、検証、Draft PR、レビュー対応 |
-| `dev-review` | Development / Review | `gpt-5.6-luna` | POAから割り当てられたPRの独立レビューと個別コメント |
+| Pane 表示名 | Herdr agent 名 | 役割 | モデル / reasoning | 主な責務 |
+| --- | --- | --- | --- | --- |
+| `POA` | 起動元の Codex セッション | Orchestrator | 起動元の既存設定 | 要件、全体設計、実装計画、タスク割当、進捗、最終判断 |
+| `tech-lead` | `tech-lead-<team-key>` | Technical Lead | `gpt-6-sol` / `medium` | 高度な設計・実装・レビューへの助言。ソースは変更しない |
+| `dev-implement` | `dev-implement-<team-key>` | Development / Implementation | `gpt-6-luna` / `max` | POAから割り当てられた実装、検証、Draft PR、レビュー対応 |
+| `dev-review` | `dev-review-<team-key>` | Development / Review | `gpt-6-luna` / `max` | POAから割り当てられたPRの独立レビューと個別コメント |
+
+`team-key` は現在 Pane の `workspace_id` と `tab_id` を連結し、英数字以外をハイフンに正規化して作ります。たとえば workspace `w7`、tab `t4` なら `tech-lead-w7-t4` のようになります。Pane 表示名はタブ内で役割名のままです。
 
 POAだけが実装・レビュー・修正の作業を割り当てます。`dev-implement`と`dev-review`は互いを直接呼び出さず、Pull Requestを証跡としてPOAへ結果を返します。各役割は技術的な助言が必要なときに`tech-lead`へ相談できます。
 
@@ -24,7 +26,7 @@ GitHub上のPR会話コメント、返信、インラインレビューコメン
 - Herdr がインストールされていること
 - Codex CLI が利用できること
 - Skillを起動するCodexがHerdr管理下のPaneにあり、`HERDR_ENV=1`であること
-- `gpt-5.6-sol`と`gpt-5.6-luna`を利用できること
+- `gpt-6-sol`と`gpt-6-luna`を利用できること
 
 Skillはインストール済みの`herdr` CLIを構文の正とし、現在の作業ディレクトリを物理絶対パスへ解決して全Paneで共有します。
 
@@ -67,6 +69,8 @@ $herdr-agile-team を使って、現在のHerdr TabにAgileチームを作成し
 ```
 
 現在のPaneを`POA`として維持し、同じTabと作業ディレクトリに3つのSibling Paneを作成します。新しいWorkspace、Tab、Worktree、リモートマシンは作成しません。
+
+サイドバーでは4つのPaneすべてに表示専用 metadata `display-agent=codex` を設定します。Tab 固有の Herdr agent 名は制御用として維持し、見える agent 名は Codex に揃えます。
 
 ## 初期化時の安全境界
 
