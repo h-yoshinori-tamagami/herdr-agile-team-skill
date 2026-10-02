@@ -1,0 +1,70 @@
+onboarding = false
+
+[keys]
+switch_tab = "ctrl+1..9"
+previous_tab = ["prefix+p", "ctrl+up"]
+next_tab = ["prefix+n", "ctrl+down"]
+
+[theme]
+name = "catppuccin"
+auto_switch = false
+
+[theme.custom]
+accent = "#58a6ff"
+sidebar_bg = "#0d1117"
+active_row_bg = "#161b22"
+
+[ui]
+# 26だと少し窮屈なので、複数Codexなら30前後がおすすめ
+sidebar_width = 36
+sidebar_min_width = 30
+sidebar_max_width = 40
+
+# 状態を色だけでなく記号でも区別
+status_indicators = "symbols"
+
+# paneは境界を明確にする
+pane_borders = "always"
+pane_outer_borders = true
+pane_gaps = false
+
+# terminal領域を1列ぶん広く使う
+pane_scrollbars = false
+
+# agent名をpane枠にも表示
+show_agent_labels_on_pane_borders = true
+
+# tabは下に置いて、上部をterminalに集中
+tab_bar_position = "bottom"
+
+# 1 tabしかなければ非表示
+hide_tab_bar_when_single_tab = true
+
+# agentはworkspace単位でまとめる
+agent_panel_sort = "spaces"
+
+[ui.sidebar.agents]
+row_gap = 0
+
+rows = [
+  [{ token = "pane", fg = "#f38ba8" }],
+  ["state_icon", "agent", "state_text"],
+  ["workspace", "tab"],
+]
+
+# Codexだけ情報量を増やす
+[ui.sidebar.agents.rows_by_agent]
+codex = [
+  [{ token = "pane", fg = "#f38ba8" }],
+  ["state_icon", "agent", "state_text"],
+  ["$summary"],
+  ["workspace", "tab"],
+]
+
+[ui.sidebar.spaces]
+row_gap = 0
+
+rows = [
+  ["state_icon", "workspace"],
+  ["branch", "git_status"],
+]

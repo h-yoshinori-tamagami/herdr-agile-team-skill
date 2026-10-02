@@ -44,8 +44,25 @@ npx skills add h-yoshinori-tamagami/herdr-agile-team-skill --skill herdr-agile-t
 git clone https://github.com/h-yoshinori-tamagami/herdr-agile-team-skill.git
 cd herdr-agile-team-skill
 mkdir -p ~/.codex/skills
-cp -R herdr-agile-team ~/.codex/skills/
+cp -R herdr-agile-team herdr ~/.codex/skills/
 ```
+
+Herdr公式の操作Skillも独立した `herdr` Skill として同梱しています。内容は upstream v0.9.3 の [`skills/herdr/SKILL.md`](https://github.com/herdrdev/herdr/blob/v0.9.3/skills/herdr/SKILL.md) で、ライセンスは [`herdr/LICENSE`](herdr/LICENSE) にあります。`npx skills`からこのリポジトリのSkillを個別に導入できます:
+
+```bash
+npx skills add h-yoshinori-tamagami/herdr-agile-team-skill --skill herdr -g
+```
+
+## Herdr 設定の反映
+
+リポジトリに含まれる `config/herdr/config.toml` をユーザー設定へ反映する場合:
+
+```bash
+./scripts/apply-herdr-config.sh --dry-run
+./scripts/apply-herdr-config.sh
+```
+
+反映先は `XDG_CONFIG_HOME/herdr/config.toml`（未設定なら `~/.config/herdr/config.toml`）です。既存ファイルと内容が異なる場合は、隣にバックアップを作成してからリポジトリの設定で置き換えます。設定の自動マージは行いません。
 
 ## 使い方
 
@@ -88,15 +105,24 @@ PaneやAgentの一部だけが作成された場合も、破壊的な自動ク�
 ```text
 .
 ├── README.md
+├── config/
+│   └── herdr/
+│       └── config.toml
+├── scripts/
+│   └── apply-herdr-config.sh
+├── herdr/
+│   ├── LICENSE
+│   └── SKILL.md
 └── herdr-agile-team/
     ├── SKILL.md
     └── agents/
         └── openai.yaml
 ```
 
-`SKILL.md`がAgent向けの実行ルール、`agents/openai.yaml`が表示名や既定プロンプトなどのCodex向けUIメタデータです。
+各`SKILL.md`がAgent向けの実行ルールです。`herdr-agile-team/agents/openai.yaml`は表示名や既定プロンプトなどのCodex向けUIメタデータです。
 
 ## 関連資料
 
 - [OpenAI Developers: Build skills](https://developers.openai.com/plugins/build/skills)
 - [Herdr: Agent skill file](https://herdr.dev/docs/agent-skill/)
+- [Herdr upstream Agent Skill (v0.9.3)](https://github.com/herdrdev/herdr/blob/v0.9.3/skills/herdr/SKILL.md)
