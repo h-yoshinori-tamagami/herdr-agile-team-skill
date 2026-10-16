@@ -34,7 +34,7 @@ Use the installed `herdr` CLI as the authority for syntax. Read JSON responses a
 
 ## Fixed team shape
 
-検証済みの対象 Tab の `tab_id`（例: `w7:t4`）の英数字以外の連続文字を `-` 1つに置き換え、先頭・末尾の `-` を除いた値を `<team-key>` とする。`tab_id` には workspace ID がすでに含まれるため、重ねて連結しない。各エージェント名は `<role>-<team-key>`（例: `tech-lead-w7-t4`）とする。
+検証済みの対象 Tab の `tab_id`（例: `w7:t4`）の英数字以外の連続文字を `-` 1つに置き換え、先頭・末尾の `-` を除き、小文字にした値を `<team-key>` とする（Herdr のエージェント名は小文字で始まり、小文字・数字・`-`・`_` だけの 1〜32 文字でないと `invalid_agent_name` になる。例: `wA:t17` → `wa-t17`）。`tab_id` には workspace ID がすでに含まれるため、重ねて連結しない。各エージェント名は `<role>-<team-key>`（例: `tech-lead-w7-t4`）とする。
 
 この一意キー付きエージェント名を `agent start` と後続の Herdr 操作で使う。ペイン表示名はエージェント名と独立しており、各 Tab 内で `tech-lead`、`dev-implement`、`dev-review` にする。同じ役割名のエージェントが別 Tab にいても、それだけでは競合ではない。
 

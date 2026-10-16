@@ -13,7 +13,7 @@ Herdr の現在の Tab に、Codex エージェントによる4役の Agile チ�
 | `dev-implement` | `dev-implement-<team-key>` | Development / Implementation | `gpt-6-luna` / `max` | POAから割り当てられた実装、検証、Draft PR、レビュー対応 |
 | `dev-review` | `dev-review-<team-key>` | Development / Review | `gpt-6-luna` / `max` | POAから割り当てられたPRの独立レビューと個別コメント |
 
-`team-key` は現在 Pane の `workspace_id` と `tab_id` を連結し、英数字以外をハイフンに正規化して作ります。たとえば workspace `w7`、tab `t4` なら `tech-lead-w7-t4` のようになります。Pane 表示名はタブ内で役割名のままです。
+`team-key` は現在 Pane の `tab_id`（workspace ID を含む）の英数字以外をハイフンに正規化し、小文字にして作ります（Herdr の agent 名は小文字しか使えないため）。たとえば `wA:t17` なら `tech-lead-wa-t17` のようになります。Pane 表示名はタブ内で役割名のままです。
 
 POAだけが実装・レビュー・修正の作業を割り当てます。`dev-implement`と`dev-review`は互いを直接呼び出さず、Pull Requestを証跡としてPOAへ結果を返します。各役割は技術的な助言が必要なときに`tech-lead`へ相談できます。
 
@@ -61,16 +61,16 @@ npx skills add h-yoshinori-tamagami/herdr-agile-team-skill --skill herdr -g
 | --- | --- | --- | --- |
 | （ユーザー） | — | Product Owner | 要求と優先順位、受け入れ、`develop`・`main` へのマージとデプロイ |
 | `POA` | 起動元の Claude Code セッション | PO の代理 ＋ スクラムマスター | 要求の整理、統合ブランチの作成、進捗の管理、チームを止めない管理、PO への報告 |
-| `lead` | `lead-<team-key>` | 開発者（技術リード） | 分解、設計、担当の割り振り、統合ブランチへのマージ、`develop` 宛ての PR |
-| `dev1`・`dev2` | `dev1-<team-key>`・`dev2-<team-key>` | 開発者 | 実装とテスト、作業ブランチからの PR |
-| `qa` | `qa-<team-key>` | 開発者（品質保証） | PR のレビュー、受け入れ条件と回帰の確認 |
+| `Lead` | `lead-<team-key>` | 開発者（技術リード） | 分解、設計、担当の割り振り、統合ブランチへのマージ、`develop` 宛ての PR |
+| `Dev1`・`Dev2` | `dev1-<team-key>`・`dev2-<team-key>` | 開発者 | 実装とテスト、作業ブランチからの PR |
+| `QA` | `qa-<team-key>` | 開発者（品質保証） | PR のレビュー、受け入れ条件と回帰の確認 |
 
 ```text
-┌──────────────┬──────────────┐
-│ POA          │ lead         │
-├────────┬─────┴──┬───────────┤
-│ dev1   │ qa     │ dev2      │
-└────────┴────────┴───────────┘
+┌──────────────┬───────┬───────┐
+│              │ Lead  │ QA    │
+│ POA          ├───────┼───────┤
+│              │ Dev1  │ Dev2  │
+└──────────────┴───────┴───────┘
 ```
 
 PR は「作業ブランチ → 統合ブランチ `feature/issue<N>-<トピック>` → `develop`」の順に出し、ユーザーへ渡す PR は Draft を外します。テスト駆動開発は採りません。既定のホストは GitHub で、ユーザーの指示があれば GitLab も扱います。
