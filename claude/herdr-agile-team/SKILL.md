@@ -15,9 +15,9 @@ Herdr の操作の細部は、インストール済みの `herdr` CLI（`herdr -
 |---|---|---|---|---|
 | — | PO（ユーザー） | プロダクトオーナー | 要求と優先順位、受け入れ、`develop`・`main` へのマージ、本番のデプロイ | — |
 | `POA` | 呼び出し元のセッション | PO の代理 ＋ スクラムマスター | 要求の受け取りと整理、統合ブランチの作成、進み具合の管理、詰まりの除去、チームを止めない管理、PO への報告 | 実装・レビュー |
-| `lead` | `lead-<team-key>` | 開発者（技術リード） | タスクへの分解、設計の決定、担当の割り振り、統合ブランチへのマージ、完成の定義（DoD）の確認、`develop` 宛ての PR の作成 | PO の判断の代行、スコープの変更 |
-| `dev1`・`dev2` | `dev1-<team-key>`・`dev2-<team-key>` | 開発者 | 実装、必要なテストの追加と実行、作業ブランチからの PR、QA の指摘の修正 | 統合ブランチへの自分でのマージ |
-| `qa` | `qa-<team-key>` | 開発者（品質保証） | PR のレビュー、受け入れ条件の確認、回帰の確認、探索的な確認 | ソースの変更（指摘に留める） |
+| `Lead` | `lead-<team-key>` | 開発者（技術リード） | タスクへの分解、設計の決定、担当の割り振り、統合ブランチへのマージ、完成の定義（DoD）の確認、`develop` 宛ての PR の作成 | PO の判断の代行、スコープの変更 |
+| `Dev1`・`Dev2` | `dev1-<team-key>`・`dev2-<team-key>` | 開発者 | 実装、必要なテストの追加と実行、作業ブランチからの PR、QA の指摘の修正 | 統合ブランチへの自分でのマージ |
+| `QA` | `qa-<team-key>` | 開発者（品質保証） | PR のレビュー、受け入れ条件の確認、回帰の確認、探索的な確認 | ソースの変更（指摘に留める） |
 
 - テスト駆動開発（TDD）は採らない。Dev は実装と一緒に必要なテストを書き、QA は受け入れ条件と回帰の観点で確かめる。
 - 作業を割り振るのは、POA（要求を Lead へ）と Lead（タスクを Dev・QA へ）だけ。Dev と QA は PR を証拠にやり取りするが、互いに作業を指示しない。
@@ -32,8 +32,8 @@ Herdr の操作の細部は、インストール済みの `herdr` CLI（`herdr -
 4. 確かめたペインの `foreground_cwd` を物理の絶対パスにして `<shared-cwd>` とする。`pwd -P` と違えば、違うことを報告して、確かめたペインの方を使う。
 
 ### 2.2 名前とチームのキー
-- 確かめたペインの `tab_id`（例 `w7:t4`）の英数字以外を `-` にして、`<team-key>`（例 `w7-t4`）にする。
-- エージェント名は `<役割>-<team-key>`（例 `lead-w7-t4`）。ペインの表示名は役割名（`POA`・`lead`・`dev1`・`dev2`・`qa`）。こうすると、1 つの Herdr に複数のチーム（Tab ごと）を置ける。
+- 確かめたペインの `tab_id`（例 `wA:t17`）の英数字以外を `-` にし、**小文字にして** `<team-key>`（例 `wa-t17`）にする。Herdr のエージェント名は「小文字で始まり、小文字・数字・`-`・`_` だけ、1〜32 文字」でないと `invalid_agent_name` で起動できない（Workspace ID は `wA` のように大文字を含むことがある）。
+- エージェント名は小文字の `<役割>-<team-key>`（例 `lead-wa-t17`）。ペインの表示名は 1 文字目を大文字にした役割名（`POA`・`Lead`・`Dev1`・`Dev2`・`QA`）。表示名は大文字を使えるが、エージェント名とは別物で、連絡には小文字のエージェント名を使う。こうすると、1 つの Herdr に複数のチーム（Tab ごと）を置ける。
 - `herdr agent list` を同じ Tab で絞り、`lead`・`dev1`・`dev2`・`qa` か、その名前に `-` が続くエージェントがいれば、何も変えずに止まって報告する。作る予定の名前がほかの Tab で使われている場合も止まる。既存のエージェントの名前を変えたり、使い回したりしない。
 
 ### 2.3 PO に確かめること（決まっていれば聞かない）
@@ -42,34 +42,39 @@ Herdr の操作の細部は、インストール済みの `herdr` CLI（`herdr -
 - PR のタイトルの決まり（接尾辞など）があるか
 - 長く残すメモの置き場所（リポジトリの外。例 `~/<repo>-notes/`）
 
-### 2.4 ペインの配置（呼び出し元はそのまま、上 2・下 3）
+### 2.4 ペインの配置（POA は左半分、右半分を 2×2 の等分）
 
 ```text
-┌──────────────┬──────────────┐
-│ POA          │ lead         │
-├────────┬─────┴──┬───────────┤
-│ dev1   │ qa     │ dev2      │
-└────────┴────────┴───────────┘
+┌──────────────┬───────┬───────┐
+│              │ Lead  │ QA    │
+│ POA          ├───────┼───────┤
+│              │ Dev1  │ Dev2  │
+└──────────────┴───────┴───────┘
 ```
 
 ```bash
 herdr pane rename <caller-pane-id> POA
-herdr pane split <caller-pane-id> --direction right --cwd "<shared-cwd>" --no-focus   # → lead
-herdr pane rename <lead-pane-id> lead
-herdr pane split <caller-pane-id> --direction down --cwd "<shared-cwd>" --no-focus    # → dev1
-herdr pane rename <dev1-pane-id> dev1
-herdr pane split <lead-pane-id> --direction down --cwd "<shared-cwd>" --no-focus      # → dev2
-herdr pane rename <dev2-pane-id> dev2
-herdr pane split <dev1-pane-id> --direction right --cwd "<shared-cwd>" --no-focus     # → qa
-herdr pane rename <qa-pane-id> qa
+herdr pane split <caller-pane-id> --direction right --cwd "<shared-cwd>" --no-focus   # → Lead
+herdr pane rename <lead-pane-id> Lead
+herdr pane split <lead-pane-id> --direction down --cwd "<shared-cwd>" --no-focus      # → Dev1
+herdr pane rename <dev1-pane-id> Dev1
+herdr pane split <lead-pane-id> --direction right --cwd "<shared-cwd>" --no-focus     # → QA
+herdr pane rename <qa-pane-id> QA
+herdr pane split <dev1-pane-id> --direction right --cwd "<shared-cwd>" --no-focus     # → Dev2
+herdr pane rename <dev2-pane-id> Dev2
 ```
 
 - ペイン ID は、それぞれの応答の JSON から読む。サイドバーの順番や例から推測しない。
 - 名前の変更が 1 つでも失敗したら、エージェントを起動せずに、作ったペインを報告して止まる。作ったペインを勝手に閉じない。
 - 新しい Workspace・Tab・worktree は作らない。既存のペインを閉じたり動かしたりしない。
+- 作り終えたら `herdr pane layout --pane <caller-pane-id>` で、POA が左半分（高さいっぱい）、右の 4 枚が同じ大きさであることを確かめる。
+- 作ったあとに並べ替えるとき：
+  - `herdr pane move` は同じ Tab の中では効かない（`changed:false`、`reason:same_tab`）。いったん `--new-tab --workspace <ID>` で出し、`--tab <tab_id> --target-pane <ID> --split right|down` で戻す。一時の Tab は空になると自動で消える。エージェントは動いたまま移る。
+  - `herdr pane swap --source-pane <A> --target-pane <B>` は 2 枚の位置を入れ替えるだけ（分割の形は変わらない）。
+  - 大きさは `herdr pane resize --pane <ID> --direction <向き> --amount <比率>` で直す。どの境目が動くかは分かりにくいので、1 回ごとに `pane layout` の `splits[].ratio` を見て、狙った分割が 0.5 になったか確かめる。
 
 ### 2.5 起動と最初の指示
-1. 新しいペインがシェルの入力待ちであることを確かめてから、`herdr agent start <エージェント名> --kind <種類> --pane <ID> --timeout 30000 -- <モデルなどの引数>` で起動する。返ってきた `argv` に、指定したモデルと推論の強さがあることを確かめる。使えないモデルを勝手に別のものに替えない。
+1. 新しいペインがシェルの入力待ちであることを確かめてから、`herdr agent start <エージェント名> --kind <種類> --pane <ID> --timeout 30000 -- <モデルなどの引数>` で起動する。返ってきた `argv` に、指定したモデルと推論の強さがあることを確かめる。`claude` では `argv` が返らないことがあるので、そのときは `ps -eo args | grep -- --model` のプロセスの引数か、ペインの起動画面（例 `Opus 5.5`）で確かめる。使えないモデルを勝手に別のものに替えない。
 2. `agent_not_ready`・`timeout`・`agent_prompt_stalled` が返ったら、`herdr agent get`・`herdr agent read` で様子を見てから決める。同じ指示をむやみに送り直さない。
 3. `references/role-prompts.md` の指示文を、**1 人ずつ** `herdr agent prompt <名前> "<本文>" --wait` で送る。前の人の返事が落ち着いてから次へ進む。最初の指示は役割の登録だけで、作業の指示ではない。「ツールを使わず、リポジトリも Herdr も見ず、1 文で了解を返して待つ」ことを必ず書く。
 4. 呼び出し元のペインには指示を送らない（PO との会話を中断させるため）。
