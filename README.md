@@ -2,7 +2,7 @@
 
 Herdr の現在の Tab に、Codex エージェントによる4役の Agile チームを2×2の Pane 構成で初期化する Skill です。Tab ごとに独立したチームを作れるよう、Herdr の agent 名には workspace ID と tab ID から生成した一意キーを付け、Pane の表示名には役割名を使います。
 
-チームの役割と連携ルールを各エージェントの初期コンテキストへ渡します。初期化時は全員が読み取り専用で待機し、案件の分解・実装・レビューは明示的な作業指示を受けてから開始します。
+チームの役割と連携ルールを各エージェントの初期コンテキストへ渡します。初期化後に POA が守る運用のルール（チームを止めない管理、Issue・PR を ID とタイトルの要約で呼ぶ、Draft を外して渡す、重複の確認など）も `SKILL.md` に含みます。初期化時は全員が読み取り専用で待機し、案件の分解・実装・レビューは明示的な作業指示を受けてから開始します。
 
 ## チーム構成
 
@@ -52,6 +52,37 @@ Herdr公式の操作Skillも独立した `herdr` Skill として同梱してい�
 ```bash
 npx skills add h-yoshinori-tamagami/herdr-agile-team-skill --skill herdr -g
 ```
+
+## Claude Code 版（5 役の Scrum チーム）
+
+`claude/herdr-agile-team/` は、Claude Code 用の同名の Skill です。Codex 版と立ち上げの手順（呼び出し元の Pane の確認、Tab ごとの一意な agent 名、Pane の表示名、1 人ずつの初期化）と運用のルールを共通にし、役割の構成だけを変えています。
+
+| Pane 表示名 | Herdr agent 名 | Scrum での位置づけ | 主な責務 |
+| --- | --- | --- | --- |
+| （ユーザー） | — | Product Owner | 要求と優先順位、受け入れ、`develop`・`main` へのマージとデプロイ |
+| `POA` | 起動元の Claude Code セッション | PO の代理 ＋ スクラムマスター | 要求の整理、統合ブランチの作成、進捗の管理、チームを止めない管理、PO への報告 |
+| `lead` | `lead-<team-key>` | 開発者（技術リード） | 分解、設計、担当の割り振り、統合ブランチへのマージ、`develop` 宛ての PR |
+| `dev1`・`dev2` | `dev1-<team-key>`・`dev2-<team-key>` | 開発者 | 実装とテスト、作業ブランチからの PR |
+| `qa` | `qa-<team-key>` | 開発者（品質保証） | PR のレビュー、受け入れ条件と回帰の確認 |
+
+```text
+┌──────────────┬──────────────┐
+│ POA          │ lead         │
+├────────┬─────┴──┬───────────┤
+│ dev1   │ qa     │ dev2      │
+└────────┴────────┴───────────┘
+```
+
+PR は「作業ブランチ → 統合ブランチ `feature/issue<N>-<トピック>` → `develop`」の順に出し、ユーザーへ渡す PR は Draft を外します。テスト駆動開発は採りません。既定のホストは GitHub で、ユーザーの指示があれば GitLab も扱います。
+
+手動で Claude Code のユーザー Skill として配置する場合:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -R claude/herdr-agile-team ~/.claude/skills/
+```
+
+Codex 版と Claude Code 版は Skill の名前が同じです。`npx skills add ... --skill herdr-agile-team` で入れる場合は、どちらが入ったかを確かめてください。
 
 ## Herdr 設定の反映
 
@@ -113,10 +144,15 @@ PaneやAgentの一部だけが作成された場合も、破壊的な自動ク�
 ├── herdr/
 │   ├── LICENSE
 │   └── SKILL.md
-└── herdr-agile-team/
-    ├── SKILL.md
-    └── agents/
-        └── openai.yaml
+├── herdr-agile-team/
+│   ├── SKILL.md
+│   └── agents/
+│       └── openai.yaml
+└── claude/
+    └── herdr-agile-team/
+        ├── SKILL.md
+        └── references/
+            └── role-prompts.md
 ```
 
 各`SKILL.md`がAgent向けの実行ルールです。`herdr-agile-team/agents/openai.yaml`は表示名や既定プロンプトなどのCodex向けUIメタデータです。
