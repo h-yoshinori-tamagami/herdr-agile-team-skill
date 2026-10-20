@@ -73,7 +73,9 @@ npx skills add h-yoshinori-tamagami/herdr-agile-team-skill --skill herdr -g
 └──────────────┴───────┴───────┘
 ```
 
-PR は「作業ブランチ → 統合ブランチ `feature/issue<N>-<トピック>` → `develop`」の順に出し、ユーザーへ渡す PR は Draft を外します。テスト駆動開発は採りません。既定のホストは GitHub で、ユーザーの指示があれば GitLab も扱います。
+PR は「作業ブランチ → 統合ブランチ `feature/issue<N>-<トピック>` → `develop`」の順に出し、ユーザーへ渡す PR は Draft を外します。
+
+POA はチームを作ったら `scripts/watchdog.sh` を常駐させます。全員が待機のまま 3 分たつと Lead に作業を出すよう自動で促し、許可の画面や長い待機を POA に知らせます。テスト駆動開発は採りません。既定のホストは GitHub で、ユーザーの指示があれば GitLab も扱います。
 
 手動で Claude Code のユーザー Skill として配置する場合:
 
@@ -151,8 +153,10 @@ PaneやAgentの一部だけが作成された場合も、破壊的な自動ク�
 └── claude/
     └── herdr-agile-team/
         ├── SKILL.md
-        └── references/
-            └── role-prompts.md
+        ├── references/
+        │   └── role-prompts.md
+        └── scripts/
+            └── watchdog.sh
 ```
 
 各`SKILL.md`がAgent向けの実行ルールです。`herdr-agile-team/agents/openai.yaml`は表示名や既定プロンプトなどのCodex向けUIメタデータです。
